@@ -626,7 +626,7 @@ Value Search::Worker::search(
     if (PvNode && thisThread->selDepth < ss->ply + 1)
         thisThread->selDepth = ss->ply + 1;
 
-    if (!rootNode)
+    if constexpr (!rootNode)
     {
         // Step 2. Check for aborted search and immediate draw
         if (threads.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply)
@@ -1305,7 +1305,7 @@ moves_loop:  // When in check, search starts here
         if (threads.stop.load(std::memory_order_relaxed))
             return VALUE_ZERO;
 
-        if (rootNode)
+        if constexpr (rootNode)
         {
             RootMove& rm =
               *std::find(thisThread->rootMoves.begin(), thisThread->rootMoves.end(), move);
@@ -1458,7 +1458,7 @@ moves_loop:  // When in check, search starts here
         thisThread->captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 1080;
     }
 
-    if (PvNode)
+    if constexpr (PvNode)
         bestValue = std::min(bestValue, maxValue);
 
     // If no good move is found and the previous position was ttPv, then the previous
@@ -1525,7 +1525,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     int   moveCount;
 
     // Step 1. Initialize node
-    if (PvNode)
+    if constexpr (PvNode)
     {
         (ss + 1)->pv = pv;
         ss->pv[0]    = Move::none();
@@ -1702,7 +1702,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
             {
                 bestMove = move;
 
-                if (PvNode)  // Update pv even in fail-high case
+                if constexpr (PvNode)  // Update pv even in fail-high case
                     update_pv(ss->pv, move, (ss + 1)->pv);
 
                 if (value < beta)  // Update alpha here!
@@ -1734,7 +1734,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                            : shift<SOUTH>(pos.pieces(us, PAWN)))
               & ~pos.pieces()))  // no pawn pushes available
         {
-            pos.state()->checkersBB = Rank1BB;  // search for legal king-moves only
+            // pos.state()->checkersBB = Rank1BB;  // search for legal king-moves only
             if (!MoveList<LEGAL>(pos).size())   // stalemate
                 bestValue = VALUE_DRAW;
             pos.state()->checkersBB = 0;
