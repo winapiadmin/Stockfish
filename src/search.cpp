@@ -1025,9 +1025,12 @@ moves_loop:  // When in check, search starts here
         // Increase reduction for ttPv nodes (*Scaler)
         // Smaller or even negative value is better for short time controls
         // Bigger value is better for long time controls
-        if (ss->ttPv)
-            r += 968;
-
+        if (ss->ttPv){
+            if (main_manager()->tm.optimum() > 600000)
+                r += 968;
+            else
+                r += 315;
+        }
         // Step 14. Pruning at shallow depth.
         // Depth conditions are important for mate finding.
         if (!rootNode && pos.non_pawn_material(us) && !is_loss(bestValue))
