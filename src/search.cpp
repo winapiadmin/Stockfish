@@ -985,7 +985,8 @@ Value Search::Worker::search(
         Value futilityMargin = futilityMult * depth
                              - (2789 * improving + 335 * opponentWorsening) * futilityMult / 1024
                              + std::abs(correctionValue) / 198435;
-
+        // prune bad moves aggressively
+        futilityMargin += (historyScore / 512) * depth;
         if (eval - futilityMargin >= beta)
             return (661 * beta + 363 * eval) / 1024;
     }
@@ -1145,7 +1146,7 @@ moves_loop:  // When in check, search starts here
         // Increase reduction for ttPv nodes (*Scaler)
         // Larger values scale well
         if (ss->ttPv)
-            r += 929;
+            r += 1200;
 
         // Step 14. Pruning at shallow depths.
         // Depth conditions are important for mate finding.
@@ -1298,7 +1299,6 @@ moves_loop:  // When in check, search starts here
         r += 697;  // Base reduction offset to compensate for other tweaks
         r -= moveCount * 65;
         r -= std::abs(correctionValue) / 26310;
-
         // Increase reduction for cut nodes
         if (cutNode)
             r += 4026 + 933 * !ttData.move;
