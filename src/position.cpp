@@ -1244,7 +1244,13 @@ void Position::update_piece_threats(Piece               pc,
     const Bitboard blackPawns = pieces(BLACK, PAWN);
 
 
-    Bitboard threatened       = attacks_bb(pc, s, occupied) & occupiedNoK;
+    // For sliders the piece attacks were already computed above in bAttacks/rAttacks,
+    // so reuse them instead of recomputing the (identical) slider attacks.
+    Bitboard threatened = type_of(pc) == BISHOP ? bAttacks
+                        : type_of(pc) == ROOK   ? rAttacks
+                        : type_of(pc) == QUEEN  ? (bAttacks | rAttacks)
+                        :                         attacks_bb(pc, s, occupied);
+    threatened &= occupiedNoK;
     Bitboard incoming_threats = PseudoAttacks[KNIGHT][s] & knights;
 
     if (type_of(pc) == KNIGHT || type_of(pc) == ROOK)
