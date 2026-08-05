@@ -202,6 +202,7 @@ void Search::Worker::start_searching() {
     main_manager()->tm.init(limits, rootPos.side_to_move(), rootPos.game_ply(), options,
                             main_manager()->originalTimeAdjust);
     tt.new_search();
+    main_manager()->updates.onStart();
 
     if (rootMoves.empty())
     {
@@ -644,12 +645,13 @@ void Search::Worker::do_move(
     bool capture = pos.capture_stage(move);
     ++nodes;
 
-    auto [dirtyPiece, dirtyThreats] = accumulatorStack.push();
-    pos.do_move(move, st, givesCheck, dirtyPiece, dirtyThreats, &tt, &sharedHistory);
+    Dirties& dirties = accumulatorStack.push();
+    pos.do_move(move, st, givesCheck, dirties, &tt, &sharedHistory);
 
     if (ss != nullptr)
     {
-        ss->currentMove = move;
+        auto& dirtyPiece = dirties.dirtyPiece;
+        ss->currentMove  = move;
         ss->continuationHistory =
           &continuationHistory[ss->inCheck][capture][dirtyPiece.pc][move.to_sq()];
         ss->continuationCorrectionHistory =
@@ -993,12 +995,12 @@ Value Search::Worker::search(
 
     // Step 9. Null move search with verification search
     if (cutNode && ss->staticEval >= beta - 13 * depth - 47 * improving + 365 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
+        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && beta >= -2000)
     {
         assert((ss - 1)->currentMove != Move::null());
 
         // Null move dynamic reduction based on depth
-        Depth R = 7 + depth / 3;
+        Depth R = 7 + depth / 3 + std::max((ss->staticEval - beta) / 256, 0);
         do_null_move(pos, st, ss);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
@@ -1197,8 +1199,8 @@ moves_loop:  // When in check, search starts here
                 // (*Scaler): Generally, lower divisors scale well
                 lmrDepth += history / lmrDivisor[dIndex];
 
-                Value futilityValue = ss->staticEval + 39 + 127 * !bestMove + 119 * lmrDepth
-                                    + 90 * (ss->staticEval > alpha);
+                Value futilityValue =
+                  ss->staticEval + 119 * lmrDepth + 90 * (ss->staticEval > alpha) + 164;
 
                 // Futility pruning: parent node
                 // (*Scaler): Generally, more frequent futility pruning
@@ -1263,6 +1265,15 @@ moves_loop:  // When in check, search starts here
             else if (value >= beta && !is_decisive(value))
             {
                 ttMoveHistory << -421 - 110 * depth;
+
+                if (!ss->inCheck && value > ss->staticEval)
+                {
+                    const int bonus =
+                      std::clamp(int(value - ss->staticEval) * singularDepth * 177 / 1024,
+                                 -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
+                    update_correction_history(pos, ss, *this, bonus);
+                }
+
                 return value;
             }
 
@@ -1273,14 +1284,10 @@ moves_loop:  // When in check, search starts here
             // if the ttMove is singular or can do a multi-cut, so we reduce the
             // ttMove in favor of other moves based on some conditions:
 
-            // If the ttMove is assumed to fail high over current beta
-            else if (ttData.value >= beta)
+            // If the ttMove is assumed to fail high over current beta or
+            // if we are on a cutNode
+            else if (ttData.value >= beta || cutNode)
                 extension = -3;
-
-            // If we are on a cutNode but the ttMove is not assumed to fail high
-            // over current beta
-            else if (cutNode)
-                extension = -2;
         }
 
         u64 nodeCount = rootNode ? u64(nodes) : 0;
