@@ -1,6 +1,8 @@
 # Files from build
 **/*.o
 **/*.s
+**/*.exe
+**/*.obj
 src/.depend
 src/temp_builds
 src/universal/network_dump.inc

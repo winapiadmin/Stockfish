@@ -1319,43 +1319,43 @@ misc.o: misc.cpp $(BUILD_SHA_FILE) $(BUILD_DATE_FILE) $(BUILD_DIFFINDEX_FILE)
 
 clang-profile-make:
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) \
-	EXTRACXXFLAGS='-fprofile-generate ' \
-	EXTRALDFLAGS=' -fprofile-generate' \
+	EXTRACXXFLAGS+=' -fprofile-generate ' \
+	EXTRALDFLAGS+=' -fprofile-generate' \
 	all
 
 clang-profile-use:
 	$(XCRUN) $(LLVM_PROFDATA) merge -output=stockfish.profdata *.profraw
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) \
-	EXTRACXXFLAGS='-fprofile-use=stockfish.profdata' \
-	EXTRALDFLAGS='-fprofile-use ' \
+	EXTRACXXFLAGS+=' -fprofile-use=stockfish.profdata' \
+	EXTRALDFLAGS+=' -fprofile-use ' \
 	all
 
 gcc-profile-make:
 	@mkdir -p profdir
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) \
-	EXTRACXXFLAGS='-fprofile-generate=profdir' \
+	EXTRACXXFLAGS+=' -fprofile-generate=profdir' \
 	EXTRACXXFLAGS+=$(EXTRAPROFILEFLAGS) \
-	EXTRALDFLAGS='-lgcov' \
+	EXTRALDFLAGS+=' -lgcov' \
 	all
 
 gcc-profile-use:
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) \
-	EXTRACXXFLAGS='-fprofile-use=profdir -fno-peel-loops -fno-tracer' \
+	EXTRACXXFLAGS+=' -fprofile-use=profdir -fno-peel-loops -fno-tracer' \
 	EXTRACXXFLAGS+=$(EXTRAPROFILEFLAGS) \
-	EXTRALDFLAGS='-lgcov' \
+	EXTRALDFLAGS+=' -lgcov' \
 	all
 
 icx-profile-make:
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) \
-	EXTRACXXFLAGS='-fprofile-instr-generate ' \
-	EXTRALDFLAGS=' -fprofile-instr-generate' \
+	EXTRACXXFLAGS+=' -fprofile-instr-generate ' \
+	EXTRALDFLAGS+=' -fprofile-instr-generate' \
 	all
 
 icx-profile-use:
 	$(XCRUN) $(LLVM_PROFDATA) merge -output=stockfish.profdata *.profraw
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) \
-	EXTRACXXFLAGS='-fprofile-instr-use=stockfish.profdata' \
-	EXTRALDFLAGS='-fprofile-use ' \
+	EXTRACXXFLAGS+=' -fprofile-instr-use=stockfish.profdata' \
+	EXTRALDFLAGS+=' -fprofile-use ' \
 	all
 
 .depend: $(SRCS)
